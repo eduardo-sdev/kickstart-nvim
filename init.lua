@@ -9,7 +9,14 @@ end
 
 vim.keymap.set('n', '<Space>w', ':wa!<CR>', { desc = 'Save all Files' })
 vim.keymap.set('n', '<Space>j', ':NvimTreeToggle<CR>', { desc = 'NvimTreeToggle' })
-vim.keymap.set('n', '<Space>f', ':Format<CR>', { desc = 'format' })
+
+vim.keymap.set('n', '<Space>f', ':!prettier --write --tab-width=4 % <CR>', { desc = 'format' })
+
+vim.keymap.set('n', '<Space>k', ':Commentary<CR>', { desc = 'comment' })
+vim.keymap.set('v', '<Space>k', ':Commentary<CR>', { desc = 'comment' })
+
+vim.keymap.set('i', 'jj', '<ESC>', { desc = '' })
+vim.keymap.set('i', 'jk', '<ESC>', { desc = '' })
 
 vim.cmd [[
     nnoremap <A-j> 4j
@@ -17,6 +24,8 @@ vim.cmd [[
     nnoremap <A-h> 6h
     nnoremap <A-l> 6l
 ]]
+
+vim.keymap.set('n', "<C-A-s>", ":lua require('spectre').open()<CR>")
 
 vim.keymap.set('i', "j9", ":")
 vim.keymap.set('i', "j0", ";")
@@ -42,9 +51,9 @@ vim.keymap.set('n', "<A-e>", ":Ex<cr>")
 vim.keymap.set('n', '<C-A-j>', ':m .+1<CR>==')
 vim.keymap.set('n', '<C-A-k>', ':m .-2<CR>==')
 
-vim.keymap.set('n', '<C-A-l>', ':BufferLineCycleNext<CR>')
+vim.keymap.set('n', '<C-A-l>', ':bNext<CR>')
 vim.keymap.set('n', '<C-A-h>', ':BufferLineCyclePrev<CR>')
-vim.keymap.set('n', '<C-A-q>', ':BufferKill<CR>')
+vim.keymap.set('n', '<C-A-q>', ':bdelete<CR>')
 
 vim.keymap.set('n', '<C-j>', '<C-w>j')
 vim.keymap.set('n', '<C-k>', '<C-w>k')
@@ -54,6 +63,8 @@ vim.keymap.set('v', '<C-j>', '<C-w>j')
 vim.keymap.set('v', '<C-k>', '<C-w>k')
 vim.keymap.set('v', '<C-h>', '<C-w>h')
 vim.keymap.set('v', '<C-l>', '<C-w>l')
+
+vim.keymap.set('n', '<A-r>', ':! cargo run<CR>', { desc = 'rust compiler' })
 
 vim.keymap.set('t', '<C-h>', '<C-\\><C-N><C-w>h')
 vim.keymap.set('t', '<C-j>', '<C-\\><C-N><C-w>j')
@@ -91,9 +102,6 @@ require('packer').startup(function(use)
         after = 'nvim-treesitter',
     }
 
-    use 'numToStr/Comment.nvim' -- "gc" to comment visual regions/lines
-    use 'tpope/vim-sleuth' -- Detect tabstop and shiftwidth automatically
-
     -- Fuzzy Finder (files, lsp, etc)
     use { 'nvim-telescope/telescope.nvim', branch = '0.1.x', requires = { 'nvim-lua/plenary.nvim' } }
 
@@ -118,12 +126,7 @@ require('packer').startup(function(use)
 
     -- bufferline
     use { 'akinsho/bufferline.nvim', tag = "v3.*" }
-    require("bufferline").setup {}
-
-    -- format code
-    use "lukas-reineke/lsp-format.nvim"
-    require("lsp-format").setup {}
-    require("lspconfig").gopls.setup { on_attach = require("lsp-format").on_attach }
+    -- require("bufferline").setup {}
 
     -- termianl
     use { "akinsho/toggleterm.nvim", tag = '*', config = function()
@@ -139,6 +142,12 @@ require('packer').startup(function(use)
         config = function() require("nvim-autopairs").setup {} end
     }
 
+    -- search in all project
+    use 'windwp/nvim-spectre'
+
+    -- comment
+    use 'tpope/vim-commentary'
+
     -- Add custom plugins to packer from ~/.config/nvim/lua/custom/plugins.lua
     local has_plugins, plugins = pcall(require, 'custom.plugins')
     if has_plugins then
@@ -149,6 +158,7 @@ require('packer').startup(function(use)
         require('packer').sync()
     end
 end)
+
 
 -- When we are bootstrapping a configuration, it doesn't
 -- make sense to execute the rest of the init.lua.
@@ -175,9 +185,7 @@ vim.api.nvim_create_autocmd('BufWritePost', {
 -- See `:help vim.o`
 
 -- Set highlight on search
-vim.o.hlsearch = false
--- Make line numbers default
-vim.wo.number = false
+vim.o.hlsearch = true
 -- Enable mouse mode
 vim.o.mouse = 'a'
 -- Enable break indent
@@ -225,10 +233,6 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     pattern = '*',
 })
 
-
--- Enable Comment.nvim
-require('Comment').setup()
-
 -- [[ Configure Telescope ]]
 -- See `:help telescope` and `:help telescope.setup()`
 require('telescope').setup {
@@ -248,7 +252,7 @@ pcall(require('telescope').load_extension, 'fzf')
 -- See `:help telescope.builtin`
 vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
 vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
-vim.keymap.set('n', '<leader>/', function()
+vim.keymap.set('n', '<A-s>', function()
     -- You can pass additional configuration to telescope to change theme, layout, etc.
     require('telescope.builtin').current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
         winblend = 10,
